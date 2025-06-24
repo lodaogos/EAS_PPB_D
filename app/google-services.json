@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1006769723597",
+    "project_id": "starbucks-2727f",
+    "storage_bucket": "starbucks-2727f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006769723597:android:5cfac40327fb2898d5f184",
+        "android_client_info": {
+          "package_name": "com.example.karyaseni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_LDE_tbpM7BSG4aoxhxB5aU3SFV1gvTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006769723597:android:b90aa0de6bee6fe8d5f184",
+        "android_client_info": {
+          "package_name": "com.example.starbucks"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_LDE_tbpM7BSG4aoxhxB5aU3SFV1gvTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
