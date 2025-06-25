@@ -42,16 +42,28 @@ import com.example.karyaseni.screens.LoginScreen
 import com.example.karyaseni.screens.OtpScreen
 import com.example.karyaseni.screens.RegisterScreen
 import com.google.firebase.FirebaseApp
+import com.example.karyaseni.screens.DetailScreen
+import com.example.karyaseni.screens.UploadScreen
+import com.example.karyaseni.data.ImageRepository
+import com.example.karyaseni.ImageModel
+
 import com.google.firebase.auth.FirebaseAuth
 import java.util.UUID
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.text.font.FontWeight
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.karyaseni.screens.MyProfileScreen
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,109 +92,9 @@ data class ImageModel(
     val title: String,
     val imageUri: String,
     val description: String,
+    val uploader: String,
     val date: String
 )
-
-// Repository untuk menyimpan data dummy
-object ImageRepository {
-    private val imageList = mutableStateListOf<ImageModel>()
-    init {
-        imageList.addAll(getDummyImages())
-    }
-    fun getImages(): List<ImageModel> = imageList
-
-    fun addImage(image: ImageModel) {
-        imageList.add(0, image) // add to top
-    }
-    fun getDummyImages(): List<ImageModel> {
-        return listOf(
-            ImageModel(
-                id = "1",
-                title = "Unsupervised Learning",
-                imageUri = "https://i.imgur.com/8Y8arY8.png",
-                description = "Agglomerative Clustering Scatter Plot with Centoroids",
-                date = "23 Maret 2025"
-            ),
-            ImageModel(
-                id = "2",
-                title = "Event",
-                imageUri = "https://i.ibb.co.com/pjyTYhR2/PXL-20230910-041754167-2.jpg",
-                description = "Event Wakuwaku (wibu x wota)",
-                date = "22 April 2025"
-            ),
-            ImageModel(
-                id = "3",
-                title = "Hikawa Sister",
-                imageUri = "https://static.wikia.nocookie.net/bandori/images/f/f2/Boppin%27_Twinsies%E2%99%AA.png/revision/latest?cb=20231030124252",
-                description = "Card Name: Boppin' Twinsies",
-                date = "21 April 2025"
-            ),
-            ImageModel(
-                id = "4",
-                title = "TC ITS",
-                imageUri = "https://i.imgur.com/e32oJzW.jpg",
-                description = "Gedung Teknik Informatika ITS",
-                date = "20 April 2025"
-            ),
-            ImageModel(
-                id = "5",
-                title = "Home Linux",
-                imageUri = "https://i.imgur.com/vXUDjvl.png",
-                description = "Tampilan Home Linux Akmal Sulthon",
-                date = "19 April 2025"
-            ),
-            ImageModel(
-                id = "6",
-                title = "KOCHENG",
-                imageUri = "https://i.imgur.com/NaOxukE.jpg",
-                description = "Kucing duduk seenaknya di atas laptop",
-                date = "18 April 2025"
-            ),
-            ImageModel(
-                id = "7",
-                title = "Istri Akmal",
-                imageUri = "https://pbs.twimg.com/media/GoWQOwgXMAAhWaY?format=jpg&name=large",
-                description = "Oshi akmal sulthon yang berasal dari agensi jkt48",
-                date = "17 April 2025"
-            ),
-            ImageModel(
-                id = "8",
-                title = "Istri Khosyi'",
-                imageUri = "https://i.pinimg.com/736x/0c/80/85/0c8085a3557ea00190f70506c874379c.jpg",
-                description = "Oshi khosyi yang berasal dari agensi bandori",
-                date = "16 April 2025"
-            ),
-            ImageModel(
-                id = "9",
-                title = "Sawah Terasering",
-                imageUri = "https://picsum.photos/id/18/800/800",
-                description = "Sawah terasering yang menakjubkan",
-                date = "15 April 2025"
-            ),
-            ImageModel(
-                id = "10",
-                title = "Langit Bintang",
-                imageUri = "https://picsum.photos/id/19/800/800",
-                description = "Langit malam yang dipenuhi bintang",
-                date = "14 April 2025"
-            ),
-            ImageModel(
-                id = "11",
-                title = "Sawah Terasering",
-                imageUri = "https://picsum.photos/id/18/800/800",
-                description = "Sawah terasering yang menakjubkan",
-                date = "15 April 2025"
-            ),
-            ImageModel(
-                id = "12",
-                title = "Langit Bintang",
-                imageUri = "https://picsum.photos/id/19/800/800",
-                description = "Langit malam yang dipenuhi bintang",
-                date = "14 April 2025"
-            )
-        )
-    }
-}
 
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF90CAF9),
@@ -273,7 +185,8 @@ fun MyAppNavHost(
                 },
                 onUploadClick = {
                     navController.navigate("upload")
-                }
+                },
+                navController = navController
             )
         }
 
@@ -302,27 +215,44 @@ fun MyAppNavHost(
                 }
             )
         }
+
+        composable("profile") {
+            MyProfileScreen(
+                navController = navController,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+
     }
 }
 
 // Gallery Screen - Grid view of images
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun GalleryScreen(
     onImageClick: (String) -> Unit,
-    onUploadClick: () -> Unit
+    onUploadClick: () -> Unit,
+    navController: NavHostController
 ) {
-    val allImages = remember { ImageRepository.getImages() }
-    var refreshKey by remember { mutableStateOf(0) } // this triggers recomposition
-    val images = remember(refreshKey) { allImages.shuffled().take(5) }
+    val allImages = remember { ImageRepository.getImages().shuffled() }
+    var imageCount by remember { mutableStateOf(12) }
+    val displayedImages = remember(imageCount) { allImages.take(imageCount) }
+
+    val scrollState = rememberScrollState()
+
+    // Deteksi scroll ke bawah
+    LaunchedEffect(scrollState.value) {
+        if (scrollState.value == scrollState.maxValue && imageCount < allImages.size) {
+            imageCount += 12
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(id = R.drawable.logo),
                             contentDescription = "Logo",
@@ -334,51 +264,56 @@ fun GalleryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { refreshKey++ }) { // trigger reshuffle
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    IconButton(onClick = {
+                        // TODO: Implementasi fitur search jika diinginkan
+                    }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
                     }
                     IconButton(onClick = onUploadClick) {
                         Icon(Icons.Default.Add, contentDescription = "Upload Image")
                     }
                 }
+
             )
+        },
+        bottomBar = {
+            BottomNavigationBar(navController)
         }
     ) { paddingValues ->
-//        LazyVerticalGrid(
-//            columns = GridCells.Adaptive(minSize = 150.dp),
-//            contentPadding = PaddingValues(
-//                start = 12.dp,
-//                top = paddingValues.calculateTopPadding() + 8.dp,
-//                end = 12.dp,
-//                bottom = 16.dp
-//            ),
-//            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//            verticalArrangement = Arrangement.spacedBy(8.dp),
-//            modifier = Modifier.padding(paddingValues)
-//        ) {
-//            items(images, key = { it.id }) { image ->
-//                ImageItem(
-//                    image = image,
-//                    onImageClick = onImageClick
-//                )
-//            }
-//        }
-        LazyColumn(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(0.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(paddingValues)
+                .padding(8.dp)
+                .verticalScroll(scrollState)
         ) {
-            items(images, key = { it.id }) { image ->
-                ImagePostItem(
-                    image = image,
-                    onImageClick = onImageClick
-                )
+            val leftColumn = displayedImages.filterIndexed { index, _ -> index % 2 == 0 }
+            val rightColumn = displayedImages.filterIndexed { index, _ -> index % 2 == 1 }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                leftColumn.forEach { image ->
+                    ImageItem(image = image, onImageClick = onImageClick)
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rightColumn.forEach { image ->
+                    ImageItem(image = image, onImageClick = onImageClick)
+                }
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -400,7 +335,7 @@ fun ImagePostItem(
                 .height(320.dp) // feel free to adjust height
         )
 
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
             Text(
                 text = image.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -433,209 +368,154 @@ fun ImageItem(
     image: ImageModel,
     onImageClick: (String) -> Unit
 ) {
-    Card(
+    var showMenu by remember { mutableStateOf(false) }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f)
-            .clickable { onImageClick(image.id) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .wrapContentHeight()
+            .clickable { onImageClick(image.id) }
     ) {
-        Box {
+        // Gambar di dalam kartu
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
             AsyncImage(
                 model = image.imageUri,
-                contentDescription = image.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth()
             )
+        }
 
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+        // Tombol titik tiga horizontal di bawah gambar, pojok kanan
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 4.dp, top = 4.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            IconButton(onClick = { showMenu = !showMenu }) {
+                Icon(
+                    imageVector = Icons.Default.MoreHoriz, // TITIK TIGA HORIZONTAL
+                    contentDescription = "Options"
+                )
+            }
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
             ) {
-                Text(
-                    text = image.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(8.dp)
+                DropdownMenuItem(
+                    text = { Text("Share") },
+                    onClick = {
+                        showMenu = false
+                        // TODO: implement share
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Download Image") },
+                    onClick = {
+                        showMenu = false
+                        // TODO: implement download
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Pin") },
+                    onClick = {
+                        showMenu = false
+                        // TODO: implement pin
+                    }
                 )
             }
         }
     }
 }
 
-// Detail Screen - Show image details
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailScreen(
-    imageId: String,
-    onBackClick: () -> Unit
-) {
-    val image = ImageRepository.getImages().find { it.id == imageId }
+fun BottomNavigationBar(navController: NavHostController) {
+    val currentDestination = navController
+        .currentBackStackEntryAsState().value?.destination?.route
 
-    if (image == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "Image not found")
-        }
-        return
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(image.title) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
+    Surface(
+        color = MaterialTheme.colorScheme.secondary,
+        tonalElevation = 4.dp,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        NavigationBar(
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSecondary
         ) {
-            Card(
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-            ) {
-                AsyncImage(
-                    model = image.imageUri,
-                    contentDescription = image.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = image.title,
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Taken on: ${image.date}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = image.description,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-    }
-}
-
-// Upload Screen - Simulate image upload
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun UploadScreen(
-    onBack: () -> Unit,
-    onUploadSuccess: () -> Unit
-) {
-    val context = LocalContext.current
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        selectedImageUri = uri
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Upload Image") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clickable { launcher.launch("image/*") },
-                contentAlignment = Alignment.Center
-            ) {
-                if (selectedImageUri != null) {
-                    AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = "Selected Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_home),
+                        contentDescription = "Home",
+                        modifier = Modifier.size(20.dp)
                     )
-                } else {
-                    Icon(Icons.Default.Image, contentDescription = "Pick Image")
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    if (selectedImageUri != null && title.isNotBlank()) {
-                        val newImage = ImageModel(
-                            id = UUID.randomUUID().toString(),
-                            title = title,
-                            imageUri = selectedImageUri.toString(),
-                            description = description,
-                            date = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(Date())
-                        )
-                        ImageRepository.addImage(newImage)
-                        onUploadSuccess()
-                    } else {
-                        Toast.makeText(context, "Fill all fields & pick image", Toast.LENGTH_SHORT).show()
-                    }
                 },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Upload")
-            }
+                label = {
+                    Text("Home", fontSize = MaterialTheme.typography.labelSmall.fontSize)
+                },
+                selected = currentDestination == "gallery",
+                onClick = {
+                    if (currentDestination != "gallery") {
+                        navController.navigate("gallery") {
+                            launchSingleTop = true
+                            popUpTo("gallery") { inclusive = false }
+                        }
+                    }
+                }
+            )
+
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_pin),
+                        contentDescription = "Pin",
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                label = {
+                    Text("Pin", fontSize = MaterialTheme.typography.labelSmall.fontSize)
+                },
+                selected = currentDestination == "pin",
+                onClick = {
+                    if (currentDestination != "pin") {
+                        navController.navigate("pin") {
+                            launchSingleTop = true
+                            popUpTo("gallery") { inclusive = false }
+                        }
+                    }
+                }
+            )
+
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_profile),
+                        contentDescription = "Profile",
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                label = {
+                    Text("Profile", fontSize = MaterialTheme.typography.labelSmall.fontSize)
+                },
+                selected = currentDestination == "profile",
+                onClick = {
+                    if (currentDestination != "profile") {
+                        navController.navigate("profile") {
+                            launchSingleTop = true
+                            popUpTo("gallery") { inclusive = false }
+                        }
+                    }
+                }
+            )
         }
     }
 }

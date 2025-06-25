@@ -20,6 +20,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.karyaseni.R
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -78,6 +80,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(8.dp))
 
+        var passwordVisible by remember { mutableStateOf(false) }
 
         OutlinedTextField(
             value = password,
@@ -94,8 +97,25 @@ fun LoginScreen(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible)
+                    painterResource(id = R.drawable.ic_visibility_off) // Tambahkan ikon sesuai resources-mu
+                else
+                    painterResource(id = R.drawable.ic_visibility) // Tambahkan ikon sesuai resources-mu
+
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Image(
+                        painter = image,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        modifier = Modifier.size(20.dp) // Ganti ukuran di sini sesuai kebutuhan, misalnya 16.dp, 20.dp, dst.
+                    )
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
+
 
 //        OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") })
 
